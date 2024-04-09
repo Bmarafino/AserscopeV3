@@ -9,7 +9,7 @@
 #define PIN_D19             19        // Pin D19 mapped to pin GPIO9 of ESP32
 #define PIN_D3               3        // Pin D3 mapped to pin GPIO3/RX0 of ESP32
 
-#define TIMER0_INTERVAL_US        48
+#define TIMER0_INTERVAL_US        2000
 
 //laser DAC stuff
 #define PIN_NUM_MISO GPIO_NUM_32
@@ -75,6 +75,15 @@ SPIClass * hspi = NULL;
 
 SPISettings spiSettings(20000000, MSBFIRST, SPI_MODE0);
 
+int line=0;
+
+bool IRAM_ATTR isrDraw(void * timerNo){
+
+   SendCartesiaon(line,line,0,0,0);
+  line=(line+1)%4090;
+}
+
+/*
 bool IRAM_ATTR isrDraw(void * timerNo){
 
   if (debug){
@@ -93,7 +102,7 @@ bool IRAM_ATTR isrDraw(void * timerNo){
   }
   return true;
 }
-
+*/
 
 ESP32Timer ITimer0(0);
 
@@ -148,18 +157,31 @@ void setup()
 	// For 64-bit timer counter
 	// For 16-bit timer prescaler up to 1024
 	// Interval in microsecs
+
 	if (ITimer0.attachInterruptInterval(TIMER0_INTERVAL_US, isrDraw))
-		//if (ITimer0.attachInterrupt(1, TimerHandler0))
 	{
 		Serial.print(F("Starting  ITimer0 OK, millis() = "));
 		Serial.println(millis());
 	}
-	else
+  else
 		Serial.println(F("Can't set ITimer0. Select another Timer, freq. or timer"));
     hspi->beginTransaction(spiSettings); // Begin SPI transaction with specified settings
 }
 
-
+long unsigned int timeA=0;
 void loop()
 {
+  // Serial.println(timeA);
+  // timeA=millis();
+  // int x=0;
+  // while(x<4090){
+  //   x=x+10;
+  //  SendCartesiaon(x,x,1,1,1);
+  //  //delay(1);
+  // }
+  // while(x>0){
+  //   x=x-10;
+  //   SendCartesiaon(x,x,1,1,1);
+  // }
+  // timeA=millis()-timeA;
 }
