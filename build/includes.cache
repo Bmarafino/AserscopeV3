@@ -1,0 +1,32 @@
+[
+  {
+    "Sourcefile": null,
+    "Include": "",
+    "Includepath": "/Users/bmarafino/Library/Arduino15/packages/esp32/hardware/esp32/2.0.14/cores/esp32"
+  },
+  {
+    "Sourcefile": null,
+    "Include": "",
+    "Includepath": "/Users/bmarafino/Library/Arduino15/packages/esp32/hardware/esp32/2.0.14/variants/esp32s3"
+  },
+  {
+    "Sourcefile": "/Users/bmarafino/Documents/AserscopeV3/build/sketch/SPI_slave.ino.cpp",
+    "Include": "ESP32DMASPISlave.h",
+    "Includepath": "/Users/bmarafino/Documents/Arduino/libraries/ESP32DMASPI"
+  },
+  {
+    "Sourcefile": "/Users/bmarafino/Documents/AserscopeV3/build/sketch/SPI_slave.ino.cpp",
+    "Include": "SPI.h",
+    "Includepath": "/Users/bmarafino/Library/Arduino15/packages/esp32/hardware/esp32/2.0.14/libraries/SPI/src"
+  },
+  {
+    "Sourcefile": "/Users/bmarafino/Documents/AserscopeV3/build/sketch/SPI_slave.ino.cpp",
+    "Include": "",
+    "Includepath": null
+  },
+  {
+    "Sourcefile": "/Users/bmarafino/Library/Arduino15/packages/esp32/hardware/esp32/2.0.14/libraries/SPI/src/SPI.cpp",
+    "Include": "",
+    "Includepath": null
+  }
+]

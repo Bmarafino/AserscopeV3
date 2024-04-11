@@ -5,7 +5,7 @@ import time
 import spidev
 
 # We only have SPI bus 0 available to us on the Pi
-    bus = 0
+bus = 0
 
 # Device is the chip select pin. Set to 0 or 1, depending on the connections
 device = 0
@@ -30,3 +30,4 @@ for num in range(1, 11):
 
 # Close the SPI connection
 spi.close()
+spi.Clo
