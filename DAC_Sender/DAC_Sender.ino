@@ -129,7 +129,10 @@ void SendCartesiaon(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b)
   digitalWrite(PIN_NUM_LDAC, LOW);  // Prepare for next operation
 }
 
-void setup()
+void CreateISR
+
+    void
+    setup()
 {
   Serial.begin(115200);
   pinMode(PIN_NUM_CS, OUTPUT);

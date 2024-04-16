@@ -1,0 +1,327 @@
+#include <SPI.h>
+#include "ESP32TimerInterrupt.h"
+#define _TIMERINTERRUPT_LOGLEVEL_ 3
+#include <ESP32DMASPISlave.h>
+ESP32DMASPI::Slave slave;
+
+// Don't use PIN_D1 in core v2.0.0 and v2.0.1. Check https://github.com/espressif/arduino-esp32/issues/5868
+// Don't use PIN_D2 with ESP32_C3 (crash)
+#define PIN_D19 19 // Pin D19 mapped to pin GPIO9 of ESP32
+#define PIN_D3 3   // Pin D3 mapped to pin GPIO3/RX0 of ESP32
+
+#define TIMER0_INTERVAL_US 38
+
+// laser DAC stuff
+#define MASTER_PIN_NUM_MISO GPIO_NUM_32
+#define MASTER_PIN_NUM_MOSI GPIO_NUM_37
+#define MASTER_PIN_NUM_CLK GPIO_NUM_36
+#define MASTER_PIN_NUM_CS GPIO_NUM_35
+#define PIN_NUM_LDAC GPIO_NUM_34
+
+#define PIN_NUM_LASER_R GPIO_NUM_33
+#define PIN_NUM_LASER_G GPIO_NUM_26
+#define PIN_NUM_LASER_B GPIO_NUM_40
+#define CallForPoint GPIO_NUM_39
+
+#define SLAVE_PIN_NUM_MISO -1
+#define SLAVE_PIN_NUM_MOSI GPIO_NUM_42
+#define SLAVE_PIN_NUM_CLK GPIO_NUM_41
+#define SLAVE_PIN_NUM_CS GPIO_NUM_40
+
+#define debug true
+
+static constexpr size_t BUFFER_SIZE = 4096;
+static constexpr size_t QUEUE_SIZE = 1;
+int core = 4;
+uint8_t *dma_tx_buf;
+uint8_t *dma_rx_bufA;
+uint8_t *dma_rx_bufB;
+
+volatile bool flag = true;
+
+bool blink = true;
+// tracks what points we are at
+
+typedef struct __attribute__((packed)) point
+{
+    uint16_t x;
+    uint16_t y;
+    uint8_t laser;
+} point;
+
+typedef struct
+{
+    point *curBuffer;      // Current processing buffer
+    size_t curBufferSize;  // Size in terms of number of points
+    point *nextBuffer;     // Next buffer to be processed
+    size_t nextBufferSize; // Size in terms of number of points
+    int curInd;
+    bool dirty;
+} tracker;
+
+const size_t sizeOfpoint = sizeof(point);
+
+volatile tracker globalTracker;
+
+// blink gpio
+void blinkGPIO(int pinNum)
+{
+    digitalWrite(pinNum, LOW);
+    digitalWrite(pinNum, HIGH);
+    delay(10);
+    digitalWrite(pinNum, LOW);
+}
+
+point getPoint()
+{
+    point rur;
+    if ((globalTracker.curInd + 1) < globalTracker.curBufferSize)
+    {
+        rur = globalTracker.curBuffer[globalTracker.curInd];
+        globalTracker.curInd += 1;
+    }
+    else
+    {
+        swap();
+        rur = globalTracker.curBuffer[globalTracker.curInd];
+        globalTracker.curInd += 1;
+    }
+    return rur;
+}
+
+// swaps the buffers sets dirty flag
+void swap()
+{
+    // Serial.print("Swap");
+    point *temp = globalTracker.curBuffer;
+
+    size_t old_size = globalTracker.curBufferSize;
+    globalTracker.curBuffer = globalTracker.nextBuffer;
+    globalTracker.nextBuffer = temp;
+    globalTracker.curInd = 0;
+    globalTracker.curBufferSize = globalTracker.nextBufferSize;
+    globalTracker.nextBufferSize = old_size;
+    globalTracker.dirty = true;
+}
+// calls pi to output spi and loads new buffer
+void load()
+{
+    // Serial.print("called load");
+    blinkGPIO(CallForPoint); // Assuming CallForPoint is defined appropriately
+    // Make sure to cast the buffer to uint8_t* for the transfer function if necessary
+    const size_t received_bytes = slave.transfer(dma_tx_buf, reinterpret_cast<uint8_t *>(globalTracker.nextBuffer), BUFFER_SIZE);
+    // Serial.print("bites recieved");
+    // Serial.println(received_bytes);
+    if (received_bytes > 0)
+    {
+        // Update buffer size in terms of number of points
+        // Serial.print("load:");
+        // Serial.println(received_bytes / sizeof(point));
+
+        globalTracker.nextBufferSize = (received_bytes / sizeof(point));
+    }
+    globalTracker.dirty = false;
+}
+// point p;
+//  for(int i=0;i<globalTracker.nextBufferSize;i++){
+//            p=globalTracker.nextBuffer[i];
+//            Serial.print("X: ");
+//            Serial.print(p.x);
+//            Serial.print(", Y: ");
+//            Serial.print(p.y);
+//            Serial.print(", Laser: ");
+//            Serial.println(p.laser);
+//          }
+
+// pointers to store
+// point * curPoints;
+point *Buffer; /*
+point curPoints[11] = {
+  {10,10,255,255,255},
+  {0, 0, 255, 255, 255},
+  {0, 4094, 255, 255, 255},
+  {4094, 0, 255, 255, 255},
+  {4094, 4094, 255, 255, 255},
+  {2047, 2047, 255, 255, 255},
+  {1023, 1023, 255, 255, 255},
+  {1023, 3071, 255, 255, 255},
+  {3071, 1023, 255, 255, 255},
+  {3071, 3071, 255, 255, 255},
+  {2047, 0, 255, 255, 255}
+};
+*/
+
+void sendPoint(SPIClass *spi, point data);
+// what point am I at
+long frameIndex = 1;
+// do I have to ask PI for new points
+bool feedMe;
+
+// Define SPI
+// this is to talk to pi
+// fspi = new SPIClass(FSPI);
+
+// This is to talk to DAC
+SPIClass *hspi = NULL;
+
+SPISettings spiSettings(10000000, MSBFIRST, SPI_MODE0);
+
+volatile int line = 0;
+
+bool IRAM_ATTR isrDraw(void *timerNo)
+{
+    point A = getPoint();
+    // Serial.print("X:");
+    // Serial.print(A.x);
+    // Serial.print("Y:");
+    // Serial.println(A.y);
+    sendPointToDact(A);
+    return true;
+}
+/*
+bool IRAM_ATTR isrDraw(void * timerNo){
+
+  if (debug){
+    frameIndex = (frameIndex % curPoints[0].X) +1 ;
+    point curPoint=curPoints[frameIndex];
+    SendCartesiaon(curPoint.X,curPoint.Y,curPoint.R,curPoint.G,curPoint.B);
+    return true;
+  }
+  if ((curPoints[0].X==frameIndex) && !feedMe){
+    frameIndex=1;
+    //free(curPoints);
+    //curPoints=Buffer;
+  }
+  else if(curPoints[0].X < frameIndex){
+    //sendPoint(hspi,curPoints[frameIndex]);
+  }
+  return true;
+}
+*/
+
+ESP32Timer ITimer0(0);
+void sendPointToDact(point p)
+{
+    SendCartesiaon(p.x, p.y, (p.laser >> 2 & 1), (p.laser >> 1 & 1), (p.laser & 1));
+}
+
+void SendCartesiaon(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b)
+{
+    digitalWrite(MASTER_PIN_NUM_CS, LOW); // Select the DAC
+
+    hspi->transfer(0b01010000 | ((x >> 8) & 0xF)); // Send high byte (4 control bits + 4 MSB of data)
+    hspi->transfer(x & 0xFF);                      // Send low byte (8 LSB of data)
+    hspi->endTransaction();                        // End SPI transaction
+    digitalWrite(MASTER_PIN_NUM_CS, HIGH);         // Deselect the DAC
+
+    digitalWrite(MASTER_PIN_NUM_CS, LOW);          // Select the DAC
+    hspi->beginTransaction(spiSettings);           // Begin SPI transaction with specified settings
+    hspi->transfer(0b11010000 | ((y >> 8) & 0xF)); // Send high byte (4 control bits + 4 MSB of data)
+    hspi->transfer(y & 0xFF);                      // Send low byte (8 LSB of data)
+    hspi->endTransaction();                        // End SPI transaction
+    digitalWrite(MASTER_PIN_NUM_CS, HIGH);         // Deselect the DAC
+
+    // if (r == 0 && g == 0 && b == 0)
+    // {
+    //   digitalWrite(PIN_NUM_LASER_R, HIGH);
+    // }
+    // else
+    // {
+    if (r)
+        digitalWrite(PIN_NUM_LASER_R, LOW);
+    else
+        digitalWrite(PIN_NUM_LASER_R, HIGH);
+    if (g)
+        digitalWrite(PIN_NUM_LASER_R, LOW);
+    else if (b)
+        digitalWrite(PIN_NUM_LASER_R, LOW);
+    else
+
+        //}
+        digitalWrite(PIN_NUM_LDAC, HIGH); // Latch the output
+    digitalWrite(PIN_NUM_LDAC, LOW);      // Prepare for next operation
+}
+
+void CreateISR(void *pvParameters)
+{
+    ITimer0.attachInterruptInterval(TIMER0_INTERVAL_US, isrDraw);
+    vTaskDelete(NULL);
+}
+
+void setUpSLave()
+{
+    globalTracker.curBuffer = reinterpret_cast<point *>(slave.allocDMABuffer(BUFFER_SIZE));
+    globalTracker.nextBuffer = reinterpret_cast<point *>(slave.allocDMABuffer(BUFFER_SIZE));
+    dma_tx_buf = slave.allocDMABuffer(10);
+    slave.setDataMode(SPI_MODE0);          // default: SPI_MODE0
+    slave.setMaxTransferSize(BUFFER_SIZE); // default: 4092 bytes
+    slave.setQueueSize(QUEUE_SIZE);        // default: 1
+    // begin() after setting
+    slave.begin(FSPI, SLAVE_PIN_NUM_CLK, SLAVE_PIN_NUM_MISO, SLAVE_PIN_NUM_MOSI, SLAVE_PIN_NUM_CS);
+    Serial.println("setUP");
+}
+
+void CreateISRSetup()
+{
+    Serial.print(F("\nStarting Argument_None on 6"));
+    Serial.println(ARDUINO_BOARD);
+    Serial.println(ESP32_TIMER_INTERRUPT_VERSION);
+    Serial.print(F("CPU Frequency = "));
+    Serial.print(F_CPU / 1000000);
+    Serial.println(F(" MHz"));
+    xTaskCreatePinnedToCore(CreateISR, "Attach Interrupt Task", 2000, NULL, 6, NULL, 0);
+}
+
+void setUpMASTER()
+{
+
+    pinMode(MASTER_PIN_NUM_CS, OUTPUT);
+    pinMode(PIN_NUM_LDAC, OUTPUT);
+    pinMode(CallForPoint, OUTPUT);
+    digitalWrite(MASTER_PIN_NUM_CS, HIGH); // Deselect the DAC
+    digitalWrite(PIN_NUM_LDAC, LOW);       // Prepare LDAC for active low operation
+    hspi = new SPIClass(HSPI);
+    hspi->begin(MASTER_PIN_NUM_CLK, -1, MASTER_PIN_NUM_MOSI, MASTER_PIN_NUM_CS);
+}
+
+void setup()
+{
+    while (!Serial && millis() < 5000)
+        ;
+    delay(500);
+    Serial.begin(115200);
+    pinMode(CallForPoint, OUTPUT);
+    setUpMASTER();
+    CreateISRSetup();
+    // SPI SLAVE SETUP
+    setUpSLave();
+    load();
+    swap();
+}
+
+void loop()
+{
+    if (globalTracker.dirty)
+    {
+        load();
+    }
+}
+
+// void loop()
+// {
+//   load();
+//   swap();
+//       for (size_t i = 0; i < globalTracker.curBufferSize; i ++)
+//     {
+//         // Cast the received bytes to a point struct
+//         point p = globalTracker.curBuffer[i];
+
+//         // Print the values of the point struct
+//         Serial.print("x: ");
+//         Serial.print(p.x);
+//         Serial.print(", y: ");
+//         Serial.print(p.y);
+//         Serial.print(", laser: ");
+//         Serial.println(p.laser, HEX);
+//     }
+// }
