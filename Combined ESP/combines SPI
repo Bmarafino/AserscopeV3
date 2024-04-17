@@ -103,6 +103,13 @@ void swap()
     globalTracker.nextBufferSize = old_size;
     globalTracker.dirty = true;
 }
+
+void setUpLaser()
+{
+    pinMode(PIN_NUM_LASER_R, OUTPUT);
+    pinMode(PIN_NUM_LASER_G, OUTPUT);
+    pinMode(PIN_NUM_LASER_B, OUTPUT);
+}
 // calls pi to output spi and loads new buffer
 void load()
 {
@@ -178,26 +185,6 @@ bool IRAM_ATTR isrDraw(void *timerNo)
     sendPointToDact(A);
     return true;
 }
-/*
-bool IRAM_ATTR isrDraw(void * timerNo){
-
-  if (debug){
-    frameIndex = (frameIndex % curPoints[0].X) +1 ;
-    point curPoint=curPoints[frameIndex];
-    SendCartesiaon(curPoint.X,curPoint.Y,curPoint.R,curPoint.G,curPoint.B);
-    return true;
-  }
-  if ((curPoints[0].X==frameIndex) && !feedMe){
-    frameIndex=1;
-    //free(curPoints);
-    //curPoints=Buffer;
-  }
-  else if(curPoints[0].X < frameIndex){
-    //sendPoint(hspi,curPoints[frameIndex]);
-  }
-  return true;
-}
-*/
 
 ESP32Timer ITimer0(0);
 void sendPointToDact(point p)
@@ -221,25 +208,21 @@ void SendCartesiaon(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b)
     hspi->endTransaction();                        // End SPI transaction
     digitalWrite(MASTER_PIN_NUM_CS, HIGH);         // Deselect the DAC
 
-    // if (r == 0 && g == 0 && b == 0)
-    // {
-    //   digitalWrite(PIN_NUM_LASER_R, HIGH);
-    // }
-    // else
-    // {
     if (r)
         digitalWrite(PIN_NUM_LASER_R, LOW);
     else
         digitalWrite(PIN_NUM_LASER_R, HIGH);
     if (g)
-        digitalWrite(PIN_NUM_LASER_R, LOW);
-    else if (b)
-        digitalWrite(PIN_NUM_LASER_R, LOW);
+        digitalWrite(PIN_NUM_LASER_G, LOW);
     else
+        digitalWrite(PIN_NUM_LASER_G, HIGH);
+    if (b)
+        digitalWrite(PIN_NUM_LASER_B, LOW);
+    else
+        digitalWrite(PIN_NUM_LASER_B, HIGH);
 
-        //}
-        digitalWrite(PIN_NUM_LDAC, HIGH); // Latch the output
-    digitalWrite(PIN_NUM_LDAC, LOW);      // Prepare for next operation
+    digitalWrite(PIN_NUM_LDAC, HIGH); // Latch the output
+    digitalWrite(PIN_NUM_LDAC, LOW);  // Prepare for next operation
 }
 
 void CreateISR(void *pvParameters)
@@ -306,22 +289,3 @@ void loop()
         load();
     }
 }
-
-// void loop()
-// {
-//   load();
-//   swap();
-//       for (size_t i = 0; i < globalTracker.curBufferSize; i ++)
-//     {
-//         // Cast the received bytes to a point struct
-//         point p = globalTracker.curBuffer[i];
-
-//         // Print the values of the point struct
-//         Serial.print("x: ");
-//         Serial.print(p.x);
-//         Serial.print(", y: ");
-//         Serial.print(p.y);
-//         Serial.print(", laser: ");
-//         Serial.println(p.laser, HEX);
-//     }
-// }
