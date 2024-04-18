@@ -17,7 +17,7 @@
 #define PIN_NUM_LDAC GPIO_NUM_34
 #define PIN_NUM_LASER GPIO_NUM_38
 
-#define DAC_CLOCK 20000000
+#define DAC_CLOCK 10000000
 
 #define debug true
 
