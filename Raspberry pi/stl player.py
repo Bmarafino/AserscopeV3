@@ -8,7 +8,9 @@ from matplotlib.cm import viridis
 
 def main():
     # Load the STL file
-    your_mesh = mesh.Mesh.from_file("/Users/bmarafino/Downloads/20mm_cube.stl")
+    your_mesh = mesh.Mesh.from_file(
+        "/Users/bmarafino/Downloads/gracewindale_dragon-flat-butt.stl"
+    )
 
     # Calculate the center of the mesh
     center = np.mean(your_mesh.points.reshape(-1, 9), axis=0).reshape(3, 3).mean(axis=0)

@@ -289,3 +289,4 @@ def send_spi_data(bufferSub):
 # Usage example
 ilda_reader = ILDAReader()
 ilda_reader.set_file(filedialog.askopenfilename(), 50)
+print(ilda_reader.buffer[:1000])
