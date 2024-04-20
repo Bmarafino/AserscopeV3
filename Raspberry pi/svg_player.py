@@ -46,7 +46,7 @@ class SVGPlotter:
             samples = [path.point(t / 1000.0) for t in range(1001)]
             x = [self.transform_to_fit(point.real, min_x, max_x) for point in samples]
             y = [
-                4090 + self.transform_to_fit(-point.imag, min_y, max_y)
+                4096 + self.transform_to_fit(-point.imag, min_y, max_y)
                 for point in samples
             ]
 
@@ -83,12 +83,12 @@ class SVGPlotter:
 
 
 # Usage
-root = tk.Tk()
-root.withdraw()  # Hide the main window
+# root = tk.Tk()
+# root.withdraw()  # Hide the main window
 
-file_path = filedialog.askopenfilename()  # Ask user to select an SVG file
-if file_path:
-    plotter = SVGPlotter(file_path, 200)
-    plotter.plot_svg()
+# file_path = filedialog.askopenfilename()  # Ask user to select an SVG file
+# if file_path:
+#   plotter = SVGPlotter(file_path, 200)
+#  plotter.plot_svg()
 
-root.mainloop()
+# root.mainloop()

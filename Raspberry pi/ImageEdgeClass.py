@@ -47,7 +47,7 @@ class ImageProcessor:
             return []
         return cv2.findContours(edges, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)[0]
 
-    def filter_and_reduce_contours(self, contours, max_points=50000):
+    def filter_and_reduce_contours(self, contours, max_points=2000):
         if not contours:
             return []
 
@@ -71,7 +71,7 @@ class ImageProcessor:
                 new_contours.append(contour)
         return new_contours
 
-    def scale_contours(self, contours, scale_to=(0, 4096)):
+    def scale_contours(self, contours, scale_to=(0, 4090)):
         if not contours:
             return []
 
@@ -128,7 +128,7 @@ class ImageProcessor:
         return all_points
 
 
-image = ImageProcessor("/Users/bmarafino/Downloads/udel2.png")
-image.plot_contours()
-image.get_points()
-print(image.get_points()[:100])
+# image = ImageProcessor("/Users/bmarafino/Downloads/keyboard.png")
+# image.plot_contours()
+# image.get_points()
+# print(image.get_points()[:100])

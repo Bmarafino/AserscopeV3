@@ -9,11 +9,12 @@ import time
 
 
 class ILDAReader:
-    def __init__(self):
+    def __init__(self, filepath):
         self.ILDAFileParsed = []
         self.buffer = []
         self.binaryBuffer = bytearray()
         self.file_path = None
+        self.set_file(filepath)
 
     def read_header(self, byte_data):
         # Ensure the byte_data is long enough to contain a header
@@ -62,7 +63,7 @@ class ILDAReader:
                     curdata = file.read(8)
                     currentPointstruct = struct.unpack(">hhhBB", curdata)
                     laser = 0
-                    if int((1 << 6) & currentPointstruct[3]):
+                    if not (int((1 << 6) & currentPointstruct[3])):
                         laser = 7
                     pointInHeader.append(
                         (currentPointstruct[0], currentPointstruct[1], laser)
@@ -217,25 +218,25 @@ class ILDAReader:
         # Initialize the cyclic iterator over the binary buffer
         self.cyclic_iter = cycle(self.binaryBuffer)
 
-    def getBinaryPoints(self, num_points):
-        # Each point is represented by 5 bytes, as structured by '<HHB' (2 bytes + 2 bytes + 1 byte)
-        chunk_size = num_points * 5
-        return bytes(islice(self.cyclic_iter, chunk_size))
+    #   def getBinaryPoints(self, num_points):
+    #       # Each point is represented by 5 bytes, as structured by '<HHB' (2 bytes + 2 bytes + 1 byte)
+    #       chunk_size = num_points * 5
+    #       return bytes(islice(self.cyclic_iter, chunk_size))
 
     def get_binary_buffer(self):
         return self.binaryBuffer
 
-    def get_buffer(self):
+    def get_points(self):
         return self.buffer
 
-    def set_file(self, file_path, spacing):
+    def set_file(self, file_path):
         self.file_path = file_path
         self.ILDAFileParsed = []
         self.buffer = []
         self.binaryBuffer = bytearray()
         self.read_in_file_path()
         self.scale_data_points()
-        self.interpolate_fixed_spacing(spacing)
+        # self.interpolate_fixed_spacing(spacing)
         self.create_buffer()
         self.create_binary()
 
@@ -284,9 +285,3 @@ def send_spi_data(bufferSub):
     start_time = time.perf_counter()
 
     end_time = time.perf_counter()
-
-
-# Usage example
-ilda_reader = ILDAReader()
-ilda_reader.set_file(filedialog.askopenfilename(), 50)
-print(ilda_reader.buffer[:1000])

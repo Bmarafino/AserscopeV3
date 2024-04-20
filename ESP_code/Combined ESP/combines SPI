@@ -275,6 +275,7 @@ void setup()
     Serial.begin(115200);
     pinMode(CallForPoint, OUTPUT);
     setUpMASTER();
+    setUpLaser();
     CreateISRSetup();
     // SPI SLAVE SETUP
     setUpSLave();

@@ -66,42 +66,7 @@ class Buffer:
         return binary_buffer
 
 
-# Assuming the Buffer class has been defined as in previous discussions
-
-
-def decode_binary(data):
-    """Decode the binary data back into (x, y, laser_value) tuples"""
-    points = []
-    # Since each point is represented by 5 bytes: <HHB
-    for i in range(0, len(data), 5):
-        x, y, laser_value = struct.unpack("<HHB", data[i : i + 5])
-        points.append((x, y, laser_value))
-    return points
-
-
-# Create an instance of the Buffer
-buffer = Buffer()
-
-# Add some tuple arrays to the buffer
-points1 = [(100, 150, 1), (200, 250, 2), (300, 350, 3)]
-points2 = [(400, 450, 4), (500, 550, 5), (600, 650, 6)]
-buffer.add("Sequence1", points1, plays=3)
-buffer.add("Sequence2", points2, plays=2)
-
-# Retrieve binary data from the buffer, asking for 6 points
-# Note: Adjust the number based on the buffer content and tuple size expectations
-binary_data = buffer.getBinary(6)
-
-# Decode the binary data back to tuples for viewing
-decoded_points = decode_binary(binary_data)
-print("Decoded Points:", decoded_points)
-binary_data = buffer.getBinary(5)
-
-# Decode the binary data back to tuples for viewing
-decoded_points = decode_binary(binary_data)
-print("Decoded Points:", decoded_points)
-binary_data = buffer.getBinary(7)
-
-# Decode the binary data back to tuples for viewing
-decoded_points = decode_binary(binary_data)
-print("Decoded Points:", decoded_points)
+# points1 = [(100, 150, 1), (200, 250, 2), (300, 350, 3)]
+# points2 = [(400, 450, 4), (500, 550, 5), (600, 650, 6)]
+# buffer.add("Sequence1", points1, plays=3)
+# buffer.add("Sequence2", points2, plays=2)
