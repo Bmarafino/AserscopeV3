@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from svgpathtools import svg2paths
+from svgpathtools import svg2paths, Line, QuadraticBezier, CubicBezier
 import tkinter as tk
 from tkinter import filedialog
 import numpy as np
@@ -34,46 +34,108 @@ class SVGPlotter:
         points = np.column_stack((x, y, np.full_like(x, laser)))
         return points
 
+    from svgpathtools import svg2paths, Line, QuadraticBezier, CubicBezier
+
     def load_and_process_svg(self):
-        # Load SVG file, extract paths and attributes
         paths, attributes = svg2paths(self.svg_file)
 
-        # Find bounds for rescaling
         min_x, max_x, min_y, max_y = (
             float("inf"),
             float("-inf"),
             float("inf"),
             float("-inf"),
         )
-
         for path in paths:
-            for seg in path:
-                bbox = seg.bbox()
+            for segment in path:
+                # Calculate bounding box
+                bbox = segment.bbox()
                 min_x, max_x = min(min_x, bbox[0]), max(max_x, bbox[1])
                 min_y, max_y = min(min_y, bbox[2]), max(max_y, bbox[3])
-            self.total = self.total + path.length()
-            print("total" + str(self.total))
+
+            self.total += path.length()
 
         for path in paths:
-            # path = paths[0]
             tmpSamples = self.numberOfSamples * (path.length() / self.total)
-            samples = [path.point(t / tmpSamples) for t in range(int(tmpSamples) + 1)]
-            samples.append(path.point(1))
-            samples.append(path.point(0))
-            x = [self.transform_to_fit(point.real, min_x, max_x) for point in samples]
-            y = [
-                4096 - self.transform_to_fit(point.imag, min_y, max_y)
-                for point in samples
-            ]  # Fixed the transformation for Y
-            self.points.append((x[0], y[0], 6))
-            color_index = random.choice([1, 2, 4])
-            # Assign random color index 1, 2, or 4 to the stroke
-            for i in zip(x, y):
-                self.points.append((i[0], i[1], color_index))
-            # Append the first point with laser off before starting the stroke
-            if x and y:
-                first_point = (x[-1], y[-1], 6)  # Add with laser off
-                self.points.append(first_point)
+            last_point = None
+            for segment in path:
+                if isinstance(segment, Line):
+                    samples = [
+                        segment.point(t / tmpSamples)
+                        for t in range(int(tmpSamples) + 1)
+                    ]
+                elif isinstance(segment, (QuadraticBezier, CubicBezier)):
+                    # More samples for curves
+                    samples = [
+                        segment.point(t / tmpSamples)
+                        for t in range(int(tmpSamples) + 1)
+                    ]
+                else:
+                    samples = [segment.start, segment.end]  # For simplicity
+
+                samples.append(segment.end)  # Ensure the end point is included
+
+                # Transform points
+                x = [
+                    self.transform_to_fit(point.real, min_x, max_x) for point in samples
+                ]
+                y = [
+                    4096 - self.transform_to_fit(point.imag, min_y, max_y)
+                    for point in samples
+                ]
+
+                # Check if pen should be up
+                if last_point and last_point != samples[0]:
+                    self.points.append(
+                        (x[0], y[0], 6)
+                    )  # Pen up action to move to start
+
+                # Add points with pen down
+                color_index = random.choice([1, 2, 4])
+                for i in zip(x, y):
+                    self.points.append((i[0], i[1], color_index))
+
+                last_point = samples[-1]
+
+    # def load_and_process_svg(self):
+    #     # Load SVG file, extract paths and attributes
+    #     paths, attributes = svg2paths(self.svg_file)
+
+    #     # Find bounds for rescaling
+    #     min_x, max_x, min_y, max_y = (
+    #         float("inf"),
+    #         float("-inf"),
+    #         float("inf"),
+    #         float("-inf"),
+    #     )
+
+    #     for path in paths:
+    #         for seg in path:
+    #             bbox = seg.bbox()
+    #             min_x, max_x = min(min_x, bbox[0]), max(max_x, bbox[1])
+    #             min_y, max_y = min(min_y, bbox[2]), max(max_y, bbox[3])
+    #         self.total = self.total + path.length()
+    #         print("total" + str(self.total))
+
+    #     for path in paths:
+    #         # path = paths[0]
+    #         tmpSamples = self.numberOfSamples * (path.length() / self.total)
+    #         samples = [path.point(t / tmpSamples) for t in range(int(tmpSamples) + 1)]
+    #         samples.append(path.point(1))
+    #         samples.append(path.point(0))
+    #         x = [self.transform_to_fit(point.real, min_x, max_x) for point in samples]
+    #         y = [
+    #             4096 - self.transform_to_fit(point.imag, min_y, max_y)
+    #             for point in samples
+    #         ]  # Fixed the transformation for Y
+    #         self.points.append((x[0], y[0], 6))
+    #         color_index = random.choice([1, 2, 4])
+    #         # Assign random color index 1, 2, or 4 to the stroke
+    #         for i in zip(x, y):
+    #             self.points.append((i[0], i[1], color_index))
+    #         # Append the first point with laser off before starting the stroke
+    #         if x and y:
+    #             first_point = (x[-1], y[-1], 6)  # Add with laser off
+    #             self.points.append(first_point)
 
     def get_points(self):
         # Return points data

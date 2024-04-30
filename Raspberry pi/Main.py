@@ -16,7 +16,7 @@ mainBuffer = Buffer()
 
 # SVGPlotter("/Users/bmarafino/Documents/test.svg", 200).plot_svg()
 # SVGPlotter("/Users/bmarafino/Downloads/building-svgrepo-com.svg", 100).plot_svg()
-pointsObj = SVGPlotter("/Users/bmarafino/Documents/test3.svg", 70).get_points()
+pointsObj = SVGPlotter("/Users/bmarafino/Documents/test3.svg", 40).get_points()
 mainBuffer.add("svg", pointsObj, plays=10)
 
 # mainBuffer.add("ild", ILDAReader("'/Users/bmarafino/Documents/FilesPlay/bandsag.ild").get_points(), plays=1
