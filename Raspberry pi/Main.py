@@ -4,28 +4,27 @@ from ImageEdgeClass import ImageProcessor
 from svg_player import SVGPlotter
 from buffervisulaiser import BufferVisualizer
 
-
 mainBuffer = Buffer()
-print(ImageProcessor("/Users/bmarafino/Downloads/IMG_9945.jpg").get_points()[:100])
+# print(ImageProcessor("/Users/bmarafino/Downloads/IMG_9945.jpg").get_points()[:100])
 # print(ImageProcessor("/Users/bmarafino/Downloads/udel2.png").get_points()[:100])
 # #print(ILDAReader("/Users/bmarafino/Downloads/bandsag.ild").get_points())
 
-mainBuffer.add(
-    "jpeg",
-    ImageProcessor("/Users/bmarafino/Downloads/IMG_9945.jpg").get_points(),
-    plays=10,
-)
-mainBuffer.add(
-    "png",
-    ImageProcessor("/Users/bmarafino/Downloads/udel2.png").get_points(),
-    plays=10,
-)
-# mainBuffer.add("svg", SVGPlotter("", 300).get_points(), plays=100)
-mainBuffer.add(
-    "ild", ILDAReader("/Users/bmarafino/Downloads/bandsag.ild").get_points(), plays=1
-)
+
+# png = ImageProcessor("/Users/bmarafino/Downloads/delawarelogo.png").get_points()
+
+# mainBuffer.add("svg", png, plays=10)
+
+# SVGPlotter("/Users/bmarafino/Documents/test.svg", 200).plot_svg()
+# SVGPlotter("/Users/bmarafino/Downloads/building-svgrepo-com.svg", 100).plot_svg()
+pointsObj = SVGPlotter("/Users/bmarafino/Documents/test3.svg", 70).get_points()
+mainBuffer.add("svg", pointsObj, plays=10)
+
+# mainBuffer.add("ild", ILDAReader("'/Users/bmarafino/Documents/FilesPlay/bandsag.ild").get_points(), plays=1
 
 
 # Assuming you have an instance of Buffer named `buffer_instance`
-buffer_visualizer = BufferVisualizer(mainBuffer, 2000)
-buffer_visualizer.run_visualization()
+buffer_visualizer = BufferVisualizer(mainBuffer, len(pointsObj))
+buffer_visualizer.plot_static_frame()
+
+
+# print("sent 500");

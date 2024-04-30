@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog
 import struct
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
 from itertools import cycle, islice
@@ -240,12 +240,6 @@ class ILDAReader:
         self.create_buffer()
         self.create_binary()
 
-    def readFile():
-        ilda_reader.scale_data_points()
-        ilda_reader.interpolate_fixed_spacing(50)
-        ilda_reader.create_buffer()
-        ilda_reader.create_binary()
-
     def graph(self):
         # Create a new figure
         fig, ax = plt.subplots(figsize=(10, 10))
@@ -275,13 +269,3 @@ class ILDAReader:
 
         # Show the plot
         plt.show()
-
-
-def send_spi_data(bufferSub):
-    print("Sending data...")
-    binary_buffer = bytearray()
-    for point in random_points:
-        binary_buffer += struct.pack("<HHB", *point)
-    start_time = time.perf_counter()
-
-    end_time = time.perf_counter()
