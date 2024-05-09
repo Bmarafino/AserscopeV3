@@ -58,6 +58,7 @@ class ILDAReader:
     def read_frames(self, file, data, header):
         header = self.read_header(header)
         pointInHeader = []
+        # diffren ilda format read them here:https://www.ilda.com/resources/StandardsDocs/ILDA_IDTF14_rev011.pdf
         match header["format_code"]:
             case 0:
                 for i in range(header["total_points"]):
