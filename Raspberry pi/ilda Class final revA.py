@@ -1,12 +1,14 @@
-import tkinter as tk
-from tkinter import filedialog
+# import tkinter as tk
+# from tkinter import filedialog
 import struct
 
 # import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.animation import FuncAnimation
+
+# from matplotlib.animation import FuncAnimation
 from itertools import cycle, islice
 import time
+import random
 
 
 class ILDAReader:
@@ -65,20 +67,21 @@ class ILDAReader:
                     currentPointstruct = struct.unpack(">hhhBB", curdata)
                     laser = 0
                     if not (int((1 << 6) & currentPointstruct[3])):
-                        laser = 7
+                        laser = [1, 2, 4][(currentPointstruct[4]) % 3]
                     pointInHeader.append(
                         (currentPointstruct[0], currentPointstruct[1], laser)
                     )
 
                 data.append({"header": header, "points": pointInHeader})
             case 1:
+                print("case 1")
                 for i in range(header["total_points"]):
                     curdata = file.read(6)
                     currentPointstruct = struct.unpack(">hhBB", curdata)
 
                     laser = 0
                     if int(1 << 6 & currentPointstruct[2]):
-                        laser = 7
+                        laser = 1
                         pointInHeader.append(
                             (currentPointstruct[0], currentPointstruct[1], laser)
                         )
@@ -112,7 +115,7 @@ class ILDAReader:
                 data.append({"header": header, "points": pointInHeader})
             case 5:
                 for i in range(header["total_points"]):
-                    curdata = file.read(9)
+                    curdata = file.read(8)
                     currentPointstruct = struct.unpack(">hhBBBBB", curdata)
                     red, green, blue = currentPointstruct[3:6]
                     blanking_bit = (currentPointstruct[2] & (1 << 6)) == 0
@@ -211,35 +214,50 @@ class ILDAReader:
     def create_buffer(self):
         for i in self.ILDAFileParsed:
             self.buffer.extend(i["points"])
+        # for i in range(0,4000,100):
+        # self.buffer.append((i,i,1))
+        # for i in range(4000,0,-100):
+        # self.buffer.append((i,i,1))
 
     def create_binary(self):
         # Accumulate points into binary format
         for i in self.buffer:
-            self.binaryBuffer += struct.pack("<HHB", int(i[0]), int(i[1]), int(i[2]))
+            self.binaryBuffer += struct.pack(
+                "<HHB",
+                int(((i[0]) * (3000 / 4090)) + 1000),
+                int(((i[1]) * (3000 / 4090)) + 1000),
+                int(i[2]),
+            )
         # Initialize the cyclic iterator over the binary buffer
         self.cyclic_iter = cycle(self.binaryBuffer)
 
-    #   def getBinaryPoints(self, num_points):
-    #       # Each point is represented by 5 bytes, as structured by '<HHB' (2 bytes + 2 bytes + 1 byte)
-    #       chunk_size = num_points * 5
-    #       return bytes(islice(self.cyclic_iter, chunk_size))
+    def getBinaryPoints(self, num_points):
+        # Each point is represented by 5 bytes, as structured by '<HHB' (2 bytes + 2 bytes + 1 byte)
+        chunk_size = num_points * 5
+        return bytes(islice(self.cyclic_iter, chunk_size))
 
     def get_binary_buffer(self):
         return self.binaryBuffer
 
-    def get_points(self):
+    def get_buffer(self):
         return self.buffer
 
-    def set_file(self, file_path):
+    def set_file(self, file_path, spacing):
         self.file_path = file_path
         self.ILDAFileParsed = []
         self.buffer = []
         self.binaryBuffer = bytearray()
         self.read_in_file_path()
         self.scale_data_points()
-        # self.interpolate_fixed_spacing(spacing)
+        self.interpolate_fixed_spacing(spacing)
         self.create_buffer()
         self.create_binary()
+
+    def readFile():
+        ilda_reader.scale_data_points()
+        ilda_reader.interpolate_fixed_spacing(50)
+        ilda_reader.create_buffer()
+        ilda_reader.create_binary()
 
     def graph(self):
         # Create a new figure

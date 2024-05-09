@@ -1,0 +1,30 @@
+import matplotlib.pyplot as plt
+from svgpathtools import svg2paths
+import tkinter as tk
+from tkinter import filedialog
+import numpy as np
+import random
+
+
+def calcTotalDisance(file_path, numOfPoints):
+    # Load SVG file, extract paths and attributes
+    paths, attributes = svg2paths(file_path)
+    total = 0
+    # Find bounds for rescaling
+    min_x, max_x, min_y, max_y = (
+        float("inf"),
+        float("-inf"),
+        float("inf"),
+        float("-inf"),
+    )
+    for path in paths:
+        print(path.length())
+        total = total + path.length()
+        # for seg in path:
+        #     path.length()
+
+    print("total length" + total)
+
+
+file_path = filedialog.askopenfilename()
+calcTotalDisance(file_path)

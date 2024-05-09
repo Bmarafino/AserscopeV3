@@ -21,16 +21,23 @@ class BufferVisualizer:
         for i in range(0, len(binary_data), step):
             if i + step <= len(binary_data):
                 x, y, color_byte = struct.unpack("<HHB", binary_data[i : i + step])
-                if color_byte == 1:
-                    colors.append("red")  # Color 1 is red
+                if color_byte == 4:
+                    colors.append("red")  # Color 4 is red
                 elif color_byte == 2:
                     colors.append("green")  # Color 2 is green
-                elif color_byte == 4:
-                    colors.append("blue")  # Color 4 is blue
+                elif color_byte == 1:
+                    colors.append("blue")  # Color 1 is blue
+                elif color_byte == 3:
+                    colors.append("yellow")  # Color 3 is yellow (red + green)
+                elif color_byte == 5:
+                    colors.append("magenta")  # Color 5 is magenta (red + blue)
+                elif color_byte == 6:
+                    colors.append("cyan")  # Color 6 is cyan (green + blue)
+                elif color_byte == 7:
+                    colors.append("purple")  # Color 7 is white (red + green + blue)
                 else:
-                    colors.append(
-                        "yellow"
-                    )  # 0 or any other value means no point should be drawn
+                    colors.append("black")  # Color 0 is black
+
                 points.append((x, y))
         return points, colors
 
@@ -55,8 +62,8 @@ class BufferVisualizer:
                 px, py = xi, yi
 
             # Adding labels
-            for i, (xi, yi) in enumerate(zip(x, y)):
-                self.ax.text(xi, yi, str(i), color="black", fontsize=12)
+            # for i, (xi, yi) in enumerate(zip(x, y)):
+            #     self.ax.text(xi, yi, str(i), color="black", fontsize=12)
 
         plt.show()
 

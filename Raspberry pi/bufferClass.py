@@ -62,7 +62,15 @@ class Buffer:
     def create_binary(self, item):
         binary_buffer = bytearray()
         for i in item:
-            binary_buffer.extend(struct.pack("<HHB", int(i[0]), int(i[1]), int(i[2])))
+            binary_buffer.extend(
+                struct.pack(
+                    "<HHB",
+                    int(((i[0]) * (2000 / 4090)) + 1000),
+                    int(((i[1]) * (2000 / 4090)) + 1000),
+                    int(i[2]),
+                )
+            )
+
         return binary_buffer
 
 
